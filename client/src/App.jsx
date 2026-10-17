@@ -73,6 +73,31 @@ function RecommendationCard({ book, rank }) {
   );
 }
 
+function PathStepCard({ stepData }) {
+  const { step, title, author, category, level, availableCopies, totalCopies, reason } =
+    stepData;
+  return (
+    <article className="path-step-card">
+      <div className="path-step-header">
+        <span className="path-step-label">{step}</span>
+        <span className="category">{category}</span>
+      </div>
+      <h4>{title}</h4>
+      <p className="author">by {author}</p>
+      <p className="path-step-reason">{reason}</p>
+      <div className="book-footer">
+        <span className="level">{level}</span>
+        {Number.isFinite(availableCopies) && (
+          <span className="availability">
+            {availableCopies}
+            {Number.isFinite(totalCopies) ? ` of ${totalCopies}` : ""} available
+          </span>
+        )}
+      </div>
+    </article>
+  );
+}
+
 function App() {
   const [query, setQuery] = useState("");
   const [books, setBooks] = useState([]);
@@ -84,6 +109,14 @@ function App() {
   const [recommendationsRequested, setRecommendationsRequested] = useState(false);
   const [recommendationLoading, setRecommendationLoading] = useState(false);
   const [recommendationError, setRecommendationError] = useState("");
+
+  const [pathGoal, setPathGoal] = useState("");
+  const [pathLevel, setPathLevel] = useState("beginner");
+  const [pathSteps, setPathSteps] = useState([]);
+  const [pathSource, setPathSource] = useState("");
+  const [pathLoading, setPathLoading] = useState(false);
+  const [pathError, setPathError] = useState("");
+  const [pathRequested, setPathRequested] = useState(false);
 
   useEffect(() => {
     getBooks()
@@ -163,6 +196,68 @@ function App() {
       );
     } finally {
       setRecommendationLoading(false);
+    }
+  }
+
+  async function handleLearningPath(event) {
+    event.preventDefault();
+    setPathLoading(true);
+    setPathError("");
+    setPathSteps([]);
+    setPathSource("");
+    setPathRequested(false);
+
+    try {
+      const response = await fetch(`${API_URL}/api/reading-path`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ goal: pathGoal.trim(), level: pathLevel }),
+      });
+      const data = await readJson(
+        response,
+        "The server could not build a learning path."
+      );
+
+      if (
+        !data ||
+        typeof data !== "object" ||
+        typeof data.goal !== "string" ||
+        !["ai", "fallback"].includes(data.source) ||
+        !Array.isArray(data.steps)
+      ) {
+        throw new Error(
+          "The server returned an invalid learning path response."
+        );
+      }
+
+      const validSteps = data.steps.every(
+        (s) =>
+          s &&
+          typeof s.step === "string" &&
+          typeof s.bookId === "string" &&
+          typeof s.title === "string" &&
+          typeof s.author === "string" &&
+          typeof s.category === "string" &&
+          typeof s.level === "string" &&
+          typeof s.reason === "string" &&
+          s.reason.trim()
+      );
+      if (!validSteps) {
+        throw new Error(
+          "The server returned an invalid learning path step."
+        );
+      }
+
+      setPathSteps(data.steps);
+      setPathSource(data.source);
+      setPathRequested(true);
+    } catch (requestError) {
+      setPathError(
+        requestError.message ||
+          "Could not connect to the learning path service."
+      );
+    } finally {
+      setPathLoading(false);
     }
   }
 
@@ -267,6 +362,84 @@ function App() {
           !recommendationError &&
           recommendations.length === 0 && (
             <p className="message">No recommendations found. Try another topic.</p>
+          )}
+      </section>
+
+      <section
+        className="learning-path-section"
+        aria-labelledby="learning-path-heading"
+      >
+        <div className="learning-path-intro">
+          <p className="eyebrow">LIBRA LEARNING PATH</p>
+          <h2 id="learning-path-heading">Your personalised reading journey</h2>
+          <p>
+            Enter a learning goal and choose your level. We’ll build a
+            step-by-step path — Start, Practice, Go Deeper — using real books
+            from the catalog.
+          </p>
+        </div>
+        <form className="learning-path-form" onSubmit={handleLearningPath}>
+          <label className="visually-hidden" htmlFor="path-goal">
+            Learning goal
+          </label>
+          <input
+            id="path-goal"
+            className="path-goal-input"
+            value={pathGoal}
+            onChange={(event) => setPathGoal(event.target.value)}
+            placeholder={`What do you want to learn? e.g. "build a robot from scratch"`}
+            required
+          />
+          <select
+            id="path-level"
+            className="path-level-select"
+            value={pathLevel}
+            onChange={(event) => setPathLevel(event.target.value)}
+            aria-label="Choose your level"
+          >
+            <option value="beginner">Beginner</option>
+            <option value="intermediate">Intermediate</option>
+            <option value="advanced">Advanced</option>
+          </select>
+          <button type="submit" disabled={pathLoading}>
+            {pathLoading ? "Building…" : "Build my path"}
+            <span aria-hidden="true">→</span>
+          </button>
+        </form>
+        {pathLoading && (
+          <p className="message" role="status">
+            Building your learning path…
+          </p>
+        )}
+        {pathError && (
+          <p className="message error" role="alert">
+            {pathError}
+          </p>
+        )}
+        {pathSteps.length > 0 && (
+          <div className="path-results" aria-live="polite">
+            <div className="path-results-heading">
+              <h3>Your learning path</h3>
+              <span
+                className={`recommendation-source source-${pathSource}`}
+              >
+                {pathSource === "ai" ? "AI curated" : "Catalog matched"}
+              </span>
+            </div>
+            <div className="path-steps-grid">
+              {pathSteps.map((stepData) => (
+                <PathStepCard key={stepData.step} stepData={stepData} />
+              ))}
+            </div>
+          </div>
+        )}
+        {!pathLoading &&
+          pathRequested &&
+          !pathError &&
+          pathSteps.length === 0 && (
+            <p className="message">
+              No path found for this goal. Try a different topic.
+            </p>
           )}
       </section>
 

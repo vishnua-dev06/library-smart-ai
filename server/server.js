@@ -13,6 +13,7 @@ const { parsed: serverEnv } = dotenv.config({
 });
 const GEMINI_API_KEY = serverEnv?.GEMINI_API_KEY?.trim();
 const GEMINI_MODEL = "gemini-3.8-flash";
+const STEP_LABELS = ["Start", "Practice", "Go Deeper"];
 const genAI = GEMINI_API_KEY
   ? new GoogleGenAI({ apiKey: GEMINI_API_KEY })
   : null;
@@ -206,6 +207,188 @@ function logRecommendationFallback(error) {
   );
 }
 
+function parseAIPath(text) {
+  let result;
+  try {
+    result = JSON.parse(text);
+  } catch {
+    throw new Error("Gemini returned invalid JSON for reading path.");
+  }
+  if (!result || typeof result !== "object" || !Array.isArray(result.steps)) {
+    throw new Error('Gemini path response must contain a "steps" array.');
+  }
+  if (result.steps.length > 3) {
+    throw new Error("Gemini returned more than 3 path steps.");
+  }
+
+  const seenBookIds = new Set();
+  const seenStepLabels = new Set();
+  return result.steps.map((s) => {
+    if (
+      !s ||
+      typeof s !== "object" ||
+      !STEP_LABELS.includes(s.step) ||
+      typeof s.bookId !== "string" ||
+      typeof s.reason !== "string" ||
+      !s.reason.trim()
+    ) {
+      throw new Error("Gemini returned an invalid path step.");
+    }
+    if (seenStepLabels.has(s.step)) {
+      throw new Error("Gemini returned duplicate step labels.");
+    }
+    seenStepLabels.add(s.step);
+
+    const book = books.find((b) => b.id === s.bookId);
+    if (!book || seenBookIds.has(book.id)) {
+      throw new Error("Gemini returned an unknown or duplicate book ID in path.");
+    }
+    seenBookIds.add(book.id);
+
+    return {
+      step: s.step,
+      bookId: book.id,
+      title: book.title,
+      author: book.author,
+      category: book.category,
+      level: book.level,
+      availableCopies: book.availableCopies,
+      totalCopies: book.totalCopies,
+      reason: s.reason.trim(),
+    };
+  });
+}
+
+async function getAIPath(goal, level) {
+  if (!genAI) {
+    throw new Error("GEMINI_API_KEY is not configured.");
+  }
+
+  const response = await genAI.models.generateContent({
+    model: GEMINI_MODEL,
+    contents: [
+      `Create a learning path for a student with this goal: "${goal}" (target level: ${level}).\n` +
+        "Build an ordered path using these exact step labels in order: Start, Practice, Go Deeper.\n" +
+        "Use only books from the provided catalog. Each step must use a different book. " +
+        "Only include steps you can fill with a genuinely suitable catalog book. " +
+        "Give a concise reason (1-2 sentences) for each book choice.\n" +
+        `Catalog:\n${JSON.stringify(
+          books.map(({ id, title, author, category, level: lvl, description }) => ({
+            id,
+            title,
+            author,
+            category,
+            level: lvl,
+            description,
+          }))
+        )}`,
+    ],
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          steps: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                step: { type: Type.STRING },
+                bookId: { type: Type.STRING },
+                reason: { type: Type.STRING },
+              },
+              required: ["step", "bookId", "reason"],
+            },
+          },
+        },
+        required: ["steps"],
+      },
+    },
+  });
+
+  if (typeof response.text !== "string" || !response.text.trim()) {
+    throw new Error("Gemini returned an empty path response.");
+  }
+
+  return parseAIPath(response.text);
+}
+
+function logPathFallback(error) {
+  const errorName = typeof error?.name === "string" ? error.name : "Error";
+  const errorMessage =
+    typeof error?.message === "string" ? error.message : "Unknown error";
+  const safeMessage = GEMINI_API_KEY
+    ? errorMessage.split(GEMINI_API_KEY).join("[REDACTED]")
+    : errorMessage;
+  console.warn(
+    `Gemini path failed (${errorName}): ${safeMessage}; using fallback.`
+  );
+}
+
+function getFallbackPath(goal, level) {
+  const keywords = [...new Set(getKeywords(goal))];
+  const levelOrder = { beginner: 0, intermediate: 1, advanced: 2 };
+  const targetLevelOrder = levelOrder[level] ?? 1;
+
+  const scored = books
+    .map((book) => {
+      const fieldKws = Object.fromEntries(
+        recommendationFields.map(([field]) => [
+          field,
+          new Set(getKeywords(book[field] || "")),
+        ])
+      );
+      const matched =
+        keywords.length > 0
+          ? keywords.filter((kw) =>
+              recommendationFields.some(([field]) => fieldKws[field].has(kw))
+            )
+          : [];
+      const bookLevel = levelOrder[book.level.toLowerCase()] ?? 1;
+      const levelBonus = bookLevel <= targetLevelOrder ? 0.05 : 0;
+
+      if (matched.length === 0) {
+        return { book, score: levelBonus, matchedFields: [] };
+      }
+
+      const matchedFields = recommendationFields
+        .filter(([field]) => matched.some((kw) => fieldKws[field].has(kw)))
+        .map(([field]) => field);
+      const strengths = matched.map((kw) =>
+        Math.max(
+          ...recommendationFields
+            .filter(([field]) => fieldKws[field].has(kw))
+            .map(([, s]) => s)
+        )
+      );
+      const coverage = matched.length / keywords.length;
+      const avgStrength =
+        strengths.reduce((t, s) => t + s, 0) / strengths.length;
+      const score =
+        Math.round(
+          (coverage * (avgStrength * 0.9 + 0.1) + levelBonus) * 100
+        ) / 100;
+
+      return { book, score, matchedFields };
+    })
+    .sort((a, b) => b.score - a.score);
+
+  return scored.slice(0, 3).map((item, i) => ({
+    step: STEP_LABELS[i],
+    bookId: item.book.id,
+    title: item.book.title,
+    author: item.book.author,
+    category: item.book.category,
+    level: item.book.level,
+    availableCopies: item.book.availableCopies,
+    totalCopies: item.book.totalCopies,
+    reason:
+      item.matchedFields.length > 0
+        ? `Relevant to your goal; matched in ${item.matchedFields.join(", ")}.`
+        : "A solid resource for your learning journey.",
+  }));
+}
+
 app.use(cors());
 app.use(express.json());
 
@@ -296,6 +479,44 @@ app.post("/api/recommend", async (req, res) => {
     source: "fallback",
     recommendations,
   });
+});
+
+app.post("/api/reading-path", async (req, res) => {
+  const goal =
+    typeof req.body?.goal === "string" ? req.body.goal.trim() : "";
+  const rawLevel =
+    typeof req.body?.level === "string"
+      ? req.body.level.trim().toLowerCase()
+      : "";
+
+  if (!goal) {
+    return res
+      .status(400)
+      .json({ error: "A non-blank learning goal is required." });
+  }
+  if (!["beginner", "intermediate", "advanced"].includes(rawLevel)) {
+    return res
+      .status(400)
+      .json({ error: "Level must be beginner, intermediate, or advanced." });
+  }
+
+  if (genAI) {
+    try {
+      const steps = await getAIPath(goal, rawLevel);
+      if (steps.length > 0) {
+        return res.json({ goal, level: rawLevel, source: "ai", steps });
+      }
+    } catch (error) {
+      logPathFallback(error);
+    }
+  } else {
+    console.warn(
+      "GEMINI_API_KEY is not configured; using reading path fallback."
+    );
+  }
+
+  const steps = getFallbackPath(goal, rawLevel);
+  res.json({ goal, level: rawLevel, source: "fallback", steps });
 });
 
 app.get("/api/books/:id", (req, res) => {
