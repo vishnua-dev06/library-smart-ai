@@ -28,5 +28,225 @@
     "description": "An introduction to building and programming simple robots.",
     "totalCopies": 3,
     "availableCopies": 1
+  },
+  {
+    "id": "B004",
+    "title": "Clean Code",
+    "author": "Robert C. Martin",
+    "category": "Software Engineering",
+    "level": "Intermediate",
+    "description": "Principles and practices for writing readable, maintainable code.",
+    "totalCopies": 5,
+    "availableCopies": 4
+  },
+  {
+    "id": "B005",
+    "title": "The Pragmatic Programmer",
+    "author": "David Thomas and Andrew Hunt",
+    "category": "Software Engineering",
+    "level": "Intermediate",
+    "description": "Career-long advice on craftsmanship, tools, and professional habits for developers.",
+    "totalCopies": 4,
+    "availableCopies": 2
+  },
+  {
+    "id": "B006",
+    "title": "Introduction to Algorithms",
+    "author": "Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest, and Clifford Stein",
+    "category": "Algorithms",
+    "level": "Advanced",
+    "description": "A comprehensive reference covering a broad range of algorithms and data structures in depth.",
+    "totalCopies": 3,
+    "availableCopies": 1
+  },
+  {
+    "id": "B007",
+    "title": "Automate the Boring Stuff with Python",
+    "author": "Al Sweigart",
+    "category": "Programming",
+    "level": "Beginner",
+    "description": "Practical Python scripting to automate everyday tasks like file handling, web scraping, and spreadsheets.",
+    "totalCopies": 6,
+    "availableCopies": 5
+  },
+  {
+    "id": "B008",
+    "title": "Eloquent JavaScript",
+    "author": "Marijn Haverbeke",
+    "category": "Web Development",
+    "level": "Beginner",
+    "description": "A modern introduction to programming using JavaScript, from basics to the browser and Node.js.",
+    "totalCopies": 5,
+    "availableCopies": 3
+  },
+  {
+    "id": "B009",
+    "title": "Designing Data-Intensive Applications",
+    "author": "Martin Kleppmann",
+    "category": "Distributed Systems",
+    "level": "Advanced",
+    "description": "Deep dive into the principles behind reliable, scalable, and maintainable data systems.",
+    "totalCopies": 4,
+    "availableCopies": 2
+  },
+  {
+    "id": "B010",
+    "title": "Deep Learning",
+    "author": "Ian Goodfellow, Yoshua Bengio, and Aaron Courville",
+    "category": "Machine Learning",
+    "level": "Advanced",
+    "description": "A comprehensive textbook on deep learning theory, architectures, and applications.",
+    "totalCopies": 3,
+    "availableCopies": 1
+  },
+  {
+    "id": "B011",
+    "title": "The Linux Command Line",
+    "author": "William Shotts",
+    "category": "Operating Systems",
+    "level": "Beginner",
+    "description": "A complete introduction to the Linux shell, covering navigation, scripting, and system administration basics.",
+    "totalCopies": 6,
+    "availableCopies": 4
+  },
+  {
+    "id": "B012",
+    "title": "Computer Networking: A Top-Down Approach",
+    "author": "James Kurose and Keith Ross",
+    "category": "Networks",
+    "level": "Intermediate",
+    "description": "A widely used textbook covering networking from the application layer down to the physical layer.",
+    "totalCopies": 4,
+    "availableCopies": 3
+  },
+  {
+    "id": "B013",
+    "title": "Operating System Concepts",
+    "author": "Abraham Silberschatz, Peter B. Galvin, and Greg Gagne",
+    "category": "Operating Systems",
+    "level": "Intermediate",
+    "description": "A thorough introduction to OS design covering processes, memory management, and file systems.",
+    "totalCopies": 4,
+    "availableCopies": 2
+  },
+  {
+    "id": "B014",
+    "title": "The Web Application Hacker's Handbook",
+    "author": "Dafydd Stuttard and Marcus Pinto",
+    "category": "Cybersecurity",
+    "level": "Advanced",
+    "description": "A detailed guide to finding and exploiting security flaws in web applications.",
+    "totalCopies": 3,
+    "availableCopies": 0
+  },
+  {
+    "id": "B015",
+    "title": "Data Science from Scratch",
+    "author": "Joel Grus",
+    "category": "Data Science",
+    "level": "Beginner",
+    "description": "Builds core data science libraries from scratch using Python to teach the underlying concepts.",
+    "totalCopies": 5,
+    "availableCopies": 4
+  },
+  {
+    "id": "B016",
+    "title": "Artificial Intelligence: A Modern Approach",
+    "author": "Stuart Russell and Peter Norvig",
+    "category": "Artificial Intelligence",
+    "level": "Advanced",
+    "description": "The standard AI textbook, covering search, knowledge representation, planning, learning, and perception.",
+    "totalCopies": 3,
+    "availableCopies": 2
+  },
+  {
+    "id": "B017",
+    "title": "Flask Web Development",
+    "author": "Miguel Grinberg",
+    "category": "Web Development",
+    "level": "Intermediate",
+    "description": "A practical guide to building web applications with the Flask Python micro-framework.",
+    "totalCopies": 4,
+    "availableCopies": 3
+  },
+  {
+    "id": "B018",
+    "title": "Database Design for Mere Mortals",
+    "author": "Michael J. Hernandez",
+    "category": "Databases",
+    "level": "Beginner",
+    "description": "A clear, jargon-free walkthrough of relational database design from entities to normalised schemas.",
+    "totalCopies": 5,
+    "availableCopies": 5
+  },
+  {
+    "id": "B019",
+    "title": "The Algorithm Design Manual",
+    "author": "Steven S. Skiena",
+    "category": "Algorithms",
+    "level": "Intermediate",
+    "description": "Practical algorithm design techniques paired with real-world problems and a catalogue of algorithmic resources.",
+    "totalCopies": 4,
+    "availableCopies": 2
+  },
+  {
+    "id": "B020",
+    "title": "Mathematics for Machine Learning",
+    "author": "Marc Peter Deisenroth, A. Aldo Faisal, and Cheng Soon Ong",
+    "category": "Mathematics",
+    "level": "Intermediate",
+    "description": "Covers the mathematical foundations — linear algebra, calculus, and probability — needed to understand ML algorithms.",
+    "totalCopies": 4,
+    "availableCopies": 3
+  },
+  {
+    "id": "B021",
+    "title": "Kubernetes in Action",
+    "author": "Marko Luksa",
+    "category": "Cloud Computing",
+    "level": "Advanced",
+    "description": "An in-depth guide to deploying and managing containerised applications with Kubernetes.",
+    "totalCopies": 3,
+    "availableCopies": 1
+  },
+  {
+    "id": "B022",
+    "title": "Game Programming Patterns",
+    "author": "Robert Nystrom",
+    "category": "Game Development",
+    "level": "Intermediate",
+    "description": "Catalogues design patterns used in game development, with clear examples from real game codebases.",
+    "totalCopies": 4,
+    "availableCopies": 4
+  },
+  {
+    "id": "B023",
+    "title": "Head First Design Patterns",
+    "author": "Eric Freeman and Elisabeth Robson",
+    "category": "Software Engineering",
+    "level": "Beginner",
+    "description": "A visual, brain-friendly introduction to the classic software design patterns.",
+    "totalCopies": 5,
+    "availableCopies": 3
+  },
+  {
+    "id": "B024",
+    "title": "Cybersecurity Essentials",
+    "author": "Charles J. Brooks, Christopher Grow, Philip Craig, and Donald Short",
+    "category": "Cybersecurity",
+    "level": "Beginner",
+    "description": "An accessible introduction to cybersecurity concepts including threats, cryptography, and network security basics.",
+    "totalCopies": 5,
+    "availableCopies": 4
+  },
+  {
+    "id": "B025",
+    "title": "Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow",
+    "author": "Aurélien Géron",
+    "category": "Machine Learning",
+    "level": "Intermediate",
+    "description": "A practical guide to building ML and deep learning systems using Python's leading libraries.",
+    "totalCopies": 5,
+    "availableCopies": 2
   }
 ]
