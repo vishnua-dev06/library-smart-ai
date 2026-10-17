@@ -1,0 +1,32 @@
+[
+  {
+    "id": "B001",
+    "title": "Python Crash Course",
+    "author": "Eric Matthes",
+    "category": "Programming",
+    "level": "Beginner",
+    "description": "A hands-on introduction to Python programming.",
+    "totalCopies": 5,
+    "availableCopies": 3
+  },
+  {
+    "id": "B002",
+    "title": "Making Embedded Systems",
+    "author": "Elecia White",
+    "category": "Embedded Systems",
+    "level": "Intermediate",
+    "description": "A practical guide to designing software for embedded devices.",
+    "totalCopies": 4,
+    "availableCopies": 2
+  },
+  {
+    "id": "B003",
+    "title": "Robot Building for Beginners",
+    "author": "David Cook",
+    "category": "Robotics",
+    "level": "Beginner",
+    "description": "An introduction to building and programming simple robots.",
+    "totalCopies": 3,
+    "availableCopies": 1
+  }
+]

@@ -1,0 +1,165 @@
+#root {
+  min-height: 100vh;
+}
+
+.page {
+  min-height: 100vh;
+  color: #18251f;
+}
+
+.hero {
+  padding: 72px 24px 64px;
+  text-align: center;
+  background: #f0f5ed;
+}
+
+.eyebrow {
+  color: #50745c;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.hero h1 {
+  margin: 12px 0;
+  font-size: clamp(2.4rem, 6vw, 4.5rem);
+  letter-spacing: -0.05em;
+}
+
+.hero > p:not(.eyebrow) {
+  color: #637068;
+}
+
+.search {
+  display: flex;
+  max-width: 620px;
+  margin: 32px auto 0;
+  padding: 6px;
+  gap: 8px;
+  background: white;
+  border: 1px solid #dce5dc;
+  border-radius: 14px;
+}
+
+.search input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px;
+  border: 0;
+  outline: 0;
+  font: inherit;
+}
+
+.search button {
+  padding: 12px 20px;
+  color: white;
+  background: #315d43;
+  border: 0;
+  border-radius: 10px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.search button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.catalog {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 48px 24px;
+}
+
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  margin-bottom: 24px;
+}
+
+.section-heading h2 {
+  margin: 6px 0 0;
+  font-size: 1.8rem;
+}
+
+.section-heading > span,
+.author,
+.description {
+  color: #68756d;
+}
+
+.book-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+}
+
+.book-card {
+  display: flex;
+  min-height: 220px;
+  flex-direction: column;
+  padding: 22px;
+  background: white;
+  border: 1px solid #e2e9e2;
+  border-radius: 16px;
+}
+
+.category,
+.level {
+  color: #315d43;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.book-card h3 {
+  margin: 16px 0 4px;
+  font-size: 1.2rem;
+}
+
+.author {
+  margin: 0;
+}
+
+.description {
+  line-height: 1.5;
+}
+
+.book-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 18px;
+  font-size: 0.85rem;
+}
+
+.availability {
+  color: #315d43;
+  font-weight: 600;
+}
+
+.message {
+  padding: 18px 0;
+  color: #68756d;
+}
+
+.error {
+  color: #a22;
+}
+
+@media (max-width: 520px) {
+  .hero {
+    padding-top: 52px;
+  }
+
+  .section-heading {
+    align-items: start;
+    gap: 12px;
+  }
+
+  .book-footer {
+    flex-direction: column;
+  }
+}
