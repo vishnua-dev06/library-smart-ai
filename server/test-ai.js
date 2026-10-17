@@ -107,9 +107,23 @@ async function main() {
         },
       },
     });
-  } catch {
+  } catch (error) {
+    const errorName =
+      typeof error?.name === "string" ? error.name : "Error";
+    const errorMessage =
+      typeof error?.message === "string" ? error.message : "Unknown error";
+    const status =
+      typeof error?.status === "number" || typeof error?.status === "string"
+        ? ` HTTP status: ${error.status}`
+        : "";
+    const code =
+      typeof error?.code === "number" || typeof error?.code === "string"
+        ? ` code: ${error.code}`
+        : "";
+    const safeMessage = errorMessage.split(apiKey).join("[REDACTED]");
+
     throw new Error(
-      "Gemini API request failed. Check model availability, API access, and network connectivity."
+      `Gemini API request failed (${errorName}): ${safeMessage}${status}${code}`
     );
   }
 

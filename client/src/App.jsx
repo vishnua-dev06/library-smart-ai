@@ -50,6 +50,29 @@ function BookCard({ book }) {
   );
 }
 
+function RecommendationCard({ book, rank }) {
+  return (
+    <article className="recommendation-card">
+      <div className="recommendation-card-heading">
+        <span className="recommendation-rank">0{rank}</span>
+        <span className="category">{book.category}</span>
+        <span className="recommendation-score">
+          {Math.round(book.score * 100)}% match
+        </span>
+      </div>
+      <h4>{book.title}</h4>
+      <p className="author">by {book.author}</p>
+      <p className="recommendation-reason">{book.reason}</p>
+      <div className="book-footer">
+        <span className="level">{book.level}</span>
+        <span className="availability">
+          {book.availableCopies} available
+        </span>
+      </div>
+    </article>
+  );
+}
+
 function App() {
   const [query, setQuery] = useState("");
   const [books, setBooks] = useState([]);
@@ -57,6 +80,7 @@ function App() {
   const [error, setError] = useState("");
   const [recommendationQuery, setRecommendationQuery] = useState("");
   const [recommendations, setRecommendations] = useState([]);
+  const [recommendationSource, setRecommendationSource] = useState("");
   const [recommendationsRequested, setRecommendationsRequested] = useState(false);
   const [recommendationLoading, setRecommendationLoading] = useState(false);
   const [recommendationError, setRecommendationError] = useState("");
@@ -84,28 +108,55 @@ function App() {
 
   async function handleRecommendations(event) {
     event.preventDefault();
-    setRecommendationsRequested(true);
     setRecommendationLoading(true);
     setRecommendationError("");
     setRecommendations([]);
+    setRecommendationSource("");
+    setRecommendationsRequested(false);
 
     try {
       const response = await fetch(`${API_URL}/api/recommend`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: recommendationQuery }),
+        body: JSON.stringify({ query: recommendationQuery.trim() }),
       });
       const data = await readJson(
         response,
         "The server could not find recommendations."
       );
-      const results = Array.isArray(data) ? data : data.recommendations;
 
-      if (!Array.isArray(results)) {
-        throw new Error("The recommendation response was not a list of books.");
+      if (
+        !data ||
+        typeof data !== "object" ||
+        typeof data.query !== "string" ||
+        !["ai", "fallback"].includes(data.source) ||
+        !Array.isArray(data.recommendations)
+      ) {
+        throw new Error("The server returned an invalid recommendations response.");
       }
 
-      setRecommendations(results);
+      const validRecommendations = data.recommendations.every((book) =>
+        book &&
+        typeof book.bookId === "string" &&
+        typeof book.title === "string" &&
+        typeof book.author === "string" &&
+        typeof book.category === "string" &&
+        typeof book.level === "string" &&
+        Number.isFinite(book.availableCopies) &&
+        typeof book.reason === "string" &&
+        book.reason.trim() &&
+        Number.isFinite(book.score) &&
+        book.score >= 0 &&
+        book.score <= 1
+      );
+
+      if (!validRecommendations) {
+        throw new Error("The server returned an invalid recommendation.");
+      }
+
+      setRecommendations(data.recommendations);
+      setRecommendationSource(data.source);
+      setRecommendationsRequested(true);
     } catch (requestError) {
       setRecommendationError(
         requestError.message || "Could not connect to the recommendation service."
@@ -169,13 +220,14 @@ function App() {
         </div>
         <form className="recommend-form" onSubmit={handleRecommendations}>
           <label className="visually-hidden" htmlFor="recommendation-query">
-            What would you like to learn about?
+            Ask for a book recommendation
           </label>
-          <input
+          <textarea
             id="recommendation-query"
             value={recommendationQuery}
             onChange={(event) => setRecommendationQuery(event.target.value)}
-            placeholder="e.g. I want to build my first robot"
+            placeholder="Tell us what you’d like to read or learn about…"
+            rows={2}
             required
           />
           <button type="submit" disabled={recommendationLoading}>
@@ -183,15 +235,29 @@ function App() {
             <span aria-hidden="true">→</span>
           </button>
         </form>
+        {recommendationLoading && (
+          <p className="message recommendation-status" role="status">
+            Finding books that fit your prompt…
+          </p>
+        )}
         {recommendationError && (
           <p className="message error" role="alert">{recommendationError}</p>
         )}
         {recommendations.length > 0 && (
-          <div className="recommendation-results">
-            <h3>Your reading list</h3>
-            <div className="book-grid">
-              {recommendations.map((book) => (
-                <BookCard book={book} key={book.id || book.title} />
+          <div className="recommendation-results" aria-live="polite">
+            <div className="recommendation-results-heading">
+              <h3>Your reading list</h3>
+              <span className={`recommendation-source source-${recommendationSource}`}>
+                {recommendationSource === "ai" ? "AI matched" : "Keyword matched"}
+              </span>
+            </div>
+            <div className="recommendation-grid">
+              {recommendations.map((book, index) => (
+                <RecommendationCard
+                  book={book}
+                  rank={index + 1}
+                  key={book.bookId}
+                />
               ))}
             </div>
           </div>

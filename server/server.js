@@ -1,9 +1,21 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("node:path");
+const dotenv = require("dotenv");
+const { GoogleGenAI, Type } = require("@google/genai");
 const books = require("./data/books.json");
 
 const app = express();
 const PORT = 5000;
+const { parsed: serverEnv } = dotenv.config({
+  path: path.join(__dirname, ".env"),
+  quiet: true,
+});
+const GEMINI_API_KEY = serverEnv?.GEMINI_API_KEY?.trim();
+const GEMINI_MODEL = "gemini-3.8-flash";
+const genAI = GEMINI_API_KEY
+  ? new GoogleGenAI({ apiKey: GEMINI_API_KEY })
+  : null;
 
 const recommendationStopWords = new Set([
   "a",
@@ -68,6 +80,132 @@ function getKeywords(value) {
     .map(normalizeKeyword);
 }
 
+function parseAIRecommendations(text) {
+  let result;
+
+  try {
+    result = JSON.parse(text);
+  } catch {
+    throw new Error("Gemini returned invalid JSON.");
+  }
+
+  if (
+    !result ||
+    typeof result !== "object" ||
+    !Array.isArray(result.recommendations)
+  ) {
+    throw new Error('Gemini response must contain a "recommendations" array.');
+  }
+  if (result.recommendations.length > 3) {
+    throw new Error("Gemini returned more than 3 recommendations.");
+  }
+
+  const seenBookIds = new Set();
+  return result.recommendations.map((recommendation) => {
+    if (
+      !recommendation ||
+      typeof recommendation !== "object" ||
+      typeof recommendation.bookId !== "string" ||
+      typeof recommendation.reason !== "string" ||
+      !recommendation.reason.trim() ||
+      typeof recommendation.score !== "number" ||
+      !Number.isFinite(recommendation.score) ||
+      recommendation.score < 0 ||
+      recommendation.score > 1
+    ) {
+      throw new Error("Gemini returned an invalid recommendation.");
+    }
+
+    const book = books.find((item) => item.id === recommendation.bookId);
+    if (!book || seenBookIds.has(book.id)) {
+      throw new Error("Gemini returned an unknown or duplicate book ID.");
+    }
+    seenBookIds.add(book.id);
+
+    return {
+      bookId: book.id,
+      title: book.title,
+      author: book.author,
+      category: book.category,
+      level: book.level,
+      availableCopies: book.availableCopies,
+      reason: recommendation.reason.trim(),
+      score: recommendation.score,
+    };
+  });
+}
+
+async function getAIRecommendations(query) {
+  if (!genAI) {
+    throw new Error("GEMINI_API_KEY is not configured.");
+  }
+
+  const response = await genAI.models.generateContent({
+    model: GEMINI_MODEL,
+    contents: [
+      `Recommend the most relevant books for this request: ${query}\n` +
+        "Use only the provided catalog. Return up to 3 recommendations, " +
+        "ranked by relevance. Give each a concise reason and a score from 0 to 1.\n" +
+        `Catalog:\n${JSON.stringify(books.map(({ id, title, author, category, level, description }) => ({
+          id,
+          title,
+          author,
+          category,
+          level,
+          description,
+        })))}`,
+    ],
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          recommendations: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                bookId: { type: Type.STRING },
+                reason: { type: Type.STRING },
+                score: { type: Type.NUMBER },
+              },
+              required: ["bookId", "reason", "score"],
+            },
+          },
+        },
+        required: ["recommendations"],
+      },
+    },
+  });
+
+  if (typeof response.text !== "string" || !response.text.trim()) {
+    throw new Error("Gemini returned an empty response.");
+  }
+
+  return parseAIRecommendations(response.text);
+}
+
+function logRecommendationFallback(error) {
+  const errorName = typeof error?.name === "string" ? error.name : "Error";
+  const errorMessage =
+    typeof error?.message === "string" ? error.message : "Unknown error";
+  const safeMessage = GEMINI_API_KEY
+    ? errorMessage.split(GEMINI_API_KEY).join("[REDACTED]")
+    : errorMessage;
+  const status =
+    typeof error?.status === "number" || typeof error?.status === "string"
+      ? ` HTTP status: ${error.status}`
+      : "";
+  const code =
+    typeof error?.code === "number" || typeof error?.code === "string"
+      ? ` code: ${error.code}`
+      : "";
+
+  console.warn(
+    `Gemini recommendation failed (${errorName}): ${safeMessage}${status}${code}; using fallback.`
+  );
+}
+
 app.use(cors());
 app.use(express.json());
 
@@ -83,11 +221,25 @@ app.get("/api/books", (req, res) => {
   res.json(results);
 });
 
-app.post("/api/recommend", (req, res) => {
+app.post("/api/recommend", async (req, res) => {
   const query = typeof req.body?.query === "string" ? req.body.query.trim() : "";
 
   if (!query) {
     return res.status(400).json({ error: "A non-blank query is required." });
+  }
+
+  if (genAI) {
+    try {
+      return res.json({
+        query,
+        source: "ai",
+        recommendations: await getAIRecommendations(query),
+      });
+    } catch (error) {
+      logRecommendationFallback(error);
+    }
+  } else {
+    console.warn("GEMINI_API_KEY is not configured; using recommendation fallback.");
   }
 
   const keywords = [...new Set(getKeywords(query))];
